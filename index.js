@@ -21,6 +21,10 @@ app.use("/", oemSpecsRouter);
 
 app.use("/", inventoryRouter);
 
+app.get("/", function(req, res){
+res.send("hello world")
+})
+
 app.listen(8080, async () => {
   try {
     console.log(`Server is Started at  ${process.env.PORT}`);
