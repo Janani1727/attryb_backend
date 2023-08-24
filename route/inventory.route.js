@@ -1,121 +1,103 @@
 const express = require("express");
-const { InventoryModel } = require("../model/inventory.model");
-const { oemSpecsModel } = require("../model/oemspecs.model")
-const {auth} =require("../middleware/auth.middleware")
-const inventoryRouter = express.Router();
+const { MarketplaceInventoryModel } = require("../model/inventory.model");
+const { OEMSpecsModel } = require("../model/oemspecs.model");
 
+const MarketplaceInventoryRouter = express.Router();
 
-
-// get the data from the inventory and also can filter and sort the data based the requirements
-
-
-inventoryRouter.get("/inventory", async (req, res) => {
-
-  const { order, filter, year, title, mileage, color } = req.query;
-  const query = {};
-  const sort = {};
-
-  if (filter === "price") {
-    sort.newPriceOfVehicle = order === "desc" ? -1 : 1;
-  } 
-   if (filter==="mileage") {
-    sort.mileage = order === "desc" ? -1 : 1;
-  }
- 
-  if (year) {
-    query.yearOfModel = year;
-  }
-
-  if (title) {
-    query.nameOfModel = new RegExp(title, 'i'); // Case-insensitive search
-  }
-
-  if (color) {
-    query.colors = new RegExp(color, 'i'); // Case-insensitive search for color
-  }
-
-
+MarketplaceInventoryRouter.get("/", async (req, res) => {
+  let { searchModel, sortBy, sortOrder, filterColor, searchYear } = req.query;
 
   try {
-    const deals = await InventoryModel.find(query).sort(sort).populate("oemId");
-    res.status(200).send({ deals });
-  } catch (error) {
-    res.status(500).send({ msg: error.message });
+    // Define the query object
+    const query = {};
+
+    // Search by model
+    if (searchModel) {
+      query.model = { $regex: searchModel, $options: "i" };
+    }
+
+    // Filter by color
+    if (filterColor) {
+      const colorRegex = new RegExp(filterColor, "i"); // Case-insensitive regex
+      query.availableColors = colorRegex;
+    }
+
+    // Search by year
+    if (searchYear) {
+      query.year = searchYear;
+    }
+
+    // Define the sort options
+    const sortOptions = {};
+
+    if (sortBy && sortOrder) {
+      // Check if sortBy and sortOrder are provided
+      sortOptions[sortBy] = sortOrder === "asc" ? 1 : -1;
+    } else {
+      // Default sorting if sortBy or sortOrder is not provided
+      sortOptions.listPrice = 1; // Default to ascending order by price
+    }
+
+    const data = await MarketplaceInventoryModel.find(query).sort(sortOptions).populate('oemSpecs')
+
+    res.send(data);
+  } catch (err) {
+    res.send(err.message);
+    console.log("err:", err);
   }
 });
 
-
-
-
-
-
-inventoryRouter.post("/inventory", async (req, res) => {
-
+// get specific dealer's Inventory
+MarketplaceInventoryRouter.get("/dealer", async (req, res) => {
+  const ID = req.body.dealer;
   try {
-    // Create a new instance of oemSpecsModel with data from the request body
-    const newOemSpecs = new oemSpecsModel({
-      nameOfModel: req.body.nameOfModel,
-      yearOfModel: req.body.yearOfModel,
-      newPriceOfVehicle: req.body.newPriceOfVehicle,
-      colors: req.body.colors,
-      mileage: req.body.mileage,
-      power: req.body.power,
-      maxSpeed: req.body.maxSpeed,
-      img: req.body.img,
-    });
-
-    await newOemSpecs.save();
-
-  
-    let newInventoryModal = new InventoryModel(req.body);
-    await newInventoryModal.save();
-
-    res.status(200).send({ msg: "Deal Added Successs" });
-  } catch (error) {
-    res.send({ error });
+    console.log("ID:", ID);
+    const notes = await MarketplaceInventoryModel.find({ dealer: ID })
+      .populate("dealer")
+      .populate("oemSpecs");
+    res.send(notes);
+  } catch (err) {
+    console.log({ msg: "Error Occured", error: err });
   }
 });
 
+MarketplaceInventoryRouter.post("/create", async (req, res) => {
+  const payload = req.body;
 
-  
-  inventoryRouter.patch("/inventory/:id",auth,async (req, res) => {
-    const { id } = req.params;
-   
-    try {
-      await InventoryModel.findByIdAndUpdate(id, req.body);
-      res.status(200).send({ msg: "Updated Deal Success" });
-    } catch (error) {
-      res.status(500).send({ msg: error.message });
-    }
-  });
-  
-  //delete particular inventory route to deleteing the document by finding by id 
-  
-  inventoryRouter.delete("/inventory/:id",auth,async (req, res) => {
-    const { id } = req.params;
-  
-    try {
-      await InventoryModel.findByIdAndDelete(id);
-      res.status(200).send({ msg: "Deleted Deal Success" });
-    } catch (error) {
-      res.status(500).send({ msg: error.message });
-    }
-  });
-  
+  const oemSpecsData = payload.oemSpecs;
 
-  inventoryRouter.delete("/inventory",auth,async (req, res) => {
-    try {
-      const { ids } = req.body;
-  
-      // Use the $in operator to delete documents with matching IDs
-      await InventoryModel.deleteMany({ _id: { $in: ids } });
-  
-      res.status(200).send({ msg: "Deletion Successful" });
-    } catch (error) {
-      res.send({ error });
-    }
-  });
-  
+  const newInventoryItem = await new MarketplaceInventoryModel(
+    payload
+  ).populate("oemSpecs");
+  console.log(newInventoryItem);
+  res.status(201).json(newInventoryItem);
+});
 
+MarketplaceInventoryRouter.delete("/delete/:id", async (req, res) => {
+  const ID = req.params.id;
+  try {
+    await MarketplaceInventoryModel.findByIdAndDelete({ _id: ID });
+    res.send(`Note with ID ${ID} Deleted`);
+  } catch (err) {
+    console.log({ msg: "Error Occured", error: err });
+  }
+});
 
-module.exports = { inventoryRouter };
+// update in specific dealer's Inventory
+MarketplaceInventoryRouter.patch("/update/:id", async (req, res) => {
+  const ID = req.params.id;
+  try {
+    let data = await MarketplaceInventoryModel.findByIdAndUpdate(
+      { _id: ID },
+      req.body
+    );
+    res.send(data);
+  } catch (err) {
+    console.log({ msg: "Error Occured", error: err });
+  }
+});
+
+module.exports = {
+  MarketplaceInventoryRouter,
+};
+

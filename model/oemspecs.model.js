@@ -1,41 +1,18 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
+require('dotenv').config()
 
-const oemSpecSchema = mongoose.Schema({
+const oemSpecsSchema = mongoose.Schema({
+  model: { type: String},
+  year: { type: String},
+  listPrice: { type: Number},
+  availableColors: { type: [String]},
+  mileage: { type: Number},
+  power: { type: Number},
+  maxSpeed: { type: Number}
+},{versionKey:false});
 
-  nameOfModel: {
-    required: true,
-    type: String,
-  },
-  yearOfModel: {
-    required: true,
-    type: String,
-  },
-  newPriceOfVehicle: {
-    required: true,
-    type: Number,
-  },
-  colors: {
-    required: true,
-    type: Array,
-  },
-  mileage: {
-    required: true,
-    type: Number,
-  },
-  power: {
-    required: true,
-    type: Number,
-  },
-  maxSpeed: {
-    required: true,
-    type: Number,
-  },
-  img: {
-    required: true,
-    type: String,
-  },
-});
+oemSpecsSchema.index({ model: "text", year: "text" });
 
-const oemSpecsModel = mongoose.model("oemspecs", oemSpecSchema);
+const OEMSpecsModel = mongoose.model('OEMSpecs', oemSpecsSchema);
 
-module.exports = { oemSpecsModel };
+module.exports = {OEMSpecsModel};

@@ -1,38 +1,41 @@
-const express = require("express");
-const { dataBaseConnection } = require("./config/db")
-require("dotenv").config();
+const express = require("express")
+require('dotenv').config()
+const cors = require('cors')
+const { connection } = require("./config/db")
+const { MarketplaceInventoryRouter } = require("./route/inventory.route")
+// const { dealerRouter } = require("./routes/Dealer.route")
+const { OEMRouter } = require("./route/oemspecs.route")
+// const { auth } = require("./middleware/Auth.middleware")
+const { MarketplaceInventoryModel } = require("./model/inventory.model")
 
-const cors = require("cors");
-const { userRouter } = require("./route/user.route");
-const { oemSpecsRouter } = require("./route/oemspecs.route");
-const { inventoryRouter } = require("./route/inventory.route");
+const app=express()
+app.use(cors())
+app.use(express.json())
 
+MarketplaceInventoryRouter.get("/",async(req,res)=>{
+    try{
+        const oldCars = await MarketplaceInventoryModel.find().populate('oemSpecs')
+        res.send(oldCars)
+    }catch(err){
+        console.log({"msg":"Error Occured","error":err})
+    }
+})
+// app.use("/dealer",dealerRouter)
+// app.use(auth)
+app.use("/OEM",OEMRouter)
+app.use("/MarketplaceInventory",MarketplaceInventoryRouter)
 
-const app = express();
-
-app.use(cors());
-
-app.use(express.json());
-
-app.use("/", userRouter);
-
-app.use("/", oemSpecsRouter);
-
-
-app.use("/", inventoryRouter);
-
-app.get("/", function(req, res){
-res.send("hello world")
+app.get("/",(req,res)=>{
+    res.send("Home page")
 })
 
-app.listen(8080, async () => {
-  try {
-    console.log(`Server is Started at  ${process.env.PORT}`);
 
-    await dataBaseConnection;
-
-    console.log("Data Base Is Connected to Server");
-  } catch (error) {
-    console.log(error);
-  }
-});
+app.listen(process.env.port,async()=>{
+    try{
+        await connection
+        console.log("connected to DB")
+    }catch(err){
+        console.log('err:', err)
+    }
+    console.log(`server running at PORT ${process.env.port}`)
+})
