@@ -5,6 +5,7 @@ const { OEMSpecsModel } = require("../model/oemspecs.model");
 const MarketplaceInventoryRouter = express.Router();
 
 MarketplaceInventoryRouter.get("/", async (req, res) => {
+  
   let { searchModel, sortBy, sortOrder, filterColor, searchYear } = req.query;
 
   try {
@@ -69,7 +70,8 @@ MarketplaceInventoryRouter.post("/create", async (req, res) => {
   const newInventoryItem = await new MarketplaceInventoryModel(
     payload
   ).populate("oemSpecs");
-  console.log(newInventoryItem);
+  await newInventoryItem.save();
+  // console.log(newInventoryItem);
   res.status(201).json(newInventoryItem);
 });
 
