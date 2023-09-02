@@ -3,7 +3,7 @@ const { OEMSpecsModel } = require("../model/oemspecs.model")
 const OEMRouter = express.Router()
 const {auth} =require("../middleware/auth.middleware")
 
-OEMRouter.get("/", auth,async (req, res) => {
+OEMRouter.get("/",async (req, res) => {
   let { searchModel, sortBy, sortOrder, filterColor, searchYear } = req.query;
 
   try {
