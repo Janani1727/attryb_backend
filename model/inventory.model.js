@@ -7,7 +7,7 @@ const marketplaceInventorySchema = mongoose.Schema({
   description: { type: [String] },
   kmsOnOdometer: { type: Number }, 
   majorScratches: { type: Boolean, default: false }, 
-  originalPaint: { type: Boolean, default: true }, 
+  originalPaint: { type: Boolean, default: true },  
   accidentsReported: { type: Number, default: 0 }, 
   previousBuyers: { type: Number, default: 0 }, 
   registrationPlace: { type: String }, 

@@ -1,8 +1,9 @@
 const express = require("express")
 const { OEMSpecsModel } = require("../model/oemspecs.model")
 const OEMRouter = express.Router()
+const {auth} =require("../middleware/auth.middleware")
 
-OEMRouter.get("/", async (req, res) => {
+OEMRouter.get("/", auth,async (req, res) => {
   let { searchModel, sortBy, sortOrder, filterColor, searchYear } = req.query;
 
   try {
@@ -63,16 +64,25 @@ OEMRouter.get("/:id", async (req, res) => {
   
 
 // First Time OEM data POST
-OEMRouter.post("/post",async(req,res)=>{
-    const data = req.body.data
-    console.log('data:', data)
-    try{
-        const notes = await OEMSpecsModel.insertMany(data)
-        res.send(notes)
-    }catch(err){
-        console.log({"msg":"Error Occured","error":err})
-    }
-})
+
+OEMRouter.post("/post", async (req, res) => {
+  const data = req.body;
+  // console.log('data:', data);
+  try {
+      // Assuming "OEMSpecsModel" is your Mongoose model, insert the data into the database
+      const notes = await OEMSpecsModel.insertMany(data);
+
+      // Respond with the saved data
+      res.status(201).json(notes); // Respond with HTTP status 201 (Created) and the saved data
+  } catch (err) {
+      console.error({"msg": "Error Occurred", "error": err});
+      res.status(500).json({"error": "An error occurred", "details": err.message});
+  }
+});
+
+
+
+
 module.exports={
     OEMRouter
 }
